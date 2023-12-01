@@ -36,9 +36,9 @@ for directory in directories:
 
             for x in range(0, img.shape[0]):
                 for y in range(0, img.shape[1]):
-                    write_file.write(" " + str(float(img[x, y]) / 255))
+                    write_file.write("," + str(float(img[x, y]) / 255))
 
-            write_file.write(",")  # comma separated
+            write_file.write("\n")
             # plt.imshow(img)
             # plt.show()
         else:
