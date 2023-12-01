@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 import os
 
 print(os.getcwd())
-write_file = open("../datasets/ScanDataPreprocessed.txt", "a")
+write_file = open("../datasets/ScanDataPreprocessed.csv", "a")
 
 directories = [
     "../datasets/AbdomenCT/",  # class id 0
