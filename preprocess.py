@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 import os
 
 print(os.getcwd())
-write_file = open("../datasets/ScanDataPreprocessed.csv", "a")
+write_file = open("../datasets/ScanDataPreprocessed.csv", "w")
 
 directories = [
     "../datasets/AbdomenCT/",  # class id 0
@@ -36,7 +36,7 @@ for directory in directories:
 
             for x in range(0, img.shape[0]):
                 for y in range(0, img.shape[1]):
-                    write_file.write("," + str(float(img[x, y]) / 255))
+                    write_file.write("," + str(img[x, y]))
 
             write_file.write("\n")
             # plt.imshow(img)
