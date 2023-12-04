@@ -69,7 +69,7 @@ class ConvNN(nn.Module):
         input_data = F.relu(self.full_hidden_layer(input_data))
 
         # Output layer
-        input_data = self.full_output_layer(x)
+        input_data = self.full_output_layer(input_data)
         return F.log_softmax(input_data, dim=1)
 
 net = ConvNN()
