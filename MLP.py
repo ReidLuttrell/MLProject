@@ -1,8 +1,6 @@
 from numpy import *
 from matplotlib.pyplot import *
 
-import math
-
 # load train set data minus targets and normalize
 
 converter = lambda s: float(s) / 255
@@ -34,14 +32,15 @@ def test_accuracy(msg, data, targets):
         hj_prime = dot(weights_hidden, data[datum])
 
         # apply sigmoid to all
-        hj = vec_sigmoid(hj_prime)
+        hj = vec_relu(hj_prime)
 
         # add bias
         hj = insert(hj, 0, 1)
 
         # hidden to output
         ok_prime = dot(weights_output, hj)
-        ok = vec_sigmoid(ok_prime)
+        ok = vec_relu(ok_prime)
+        ok = softmax(ok)
 
         # get prediction
         prediction = argmax(ok)
@@ -51,8 +50,6 @@ def test_accuracy(msg, data, targets):
         if prediction == target:
             correct += 1
 
-    # print(msg)
-    # print(correct / total)
     return correct / total
 
 
@@ -64,13 +61,14 @@ def print_confusion(data, targets):
         # feed forward
 
         hj_prime = dot(weights_hidden, data[datum])
-        hj = vec_sigmoid(hj_prime)
+        hj = vec_relu(hj_prime)
 
         # bias
         hj = insert(hj, 0, 1)
 
         ok_prime = dot(weights_output, hj)
-        ok = vec_sigmoid(ok_prime)
+        ok = vec_relu(ok_prime)
+        ok = softmax(ok)
 
         target = targets[datum]
 
@@ -84,12 +82,23 @@ def print_confusion(data, targets):
     print(mat)
 
 
-def sigmoid(z):
-    return 1 / (1 + math.exp(-z))
+def softmax(z):
+    return exp(z) / sum(exp(z), axis=0)
 
 
-# used to apply sigmoid to matrices
-vec_sigmoid = vectorize(sigmoid)
+def relu(z):
+    return max(0, z)
+
+
+def relu_derivative(z):
+    if z > 0:
+        return 1
+    if z <= 0:
+        return 0
+
+
+vec_relu = vectorize(relu)
+vec_relu_derivative = vectorize(relu_derivative)
 
 
 # for testing
@@ -100,8 +109,8 @@ def print_dim(arr, name):
 prev_test_acc = 0
 
 # hyperparams
-epochs = 10
-eta = 0.1
+epochs = 5
+eta = 0.01
 momentum = 0.1
 
 print_dim(all_data, "all_data")
@@ -116,19 +125,19 @@ all_targets_data = [all_targets_data[i] for i in change]
 data_shape = shape(all_data)[0]
 data_targets_shape = shape(all_targets_data)[0]
 
-half_idx_data = int(shape(all_data)[0] / 2)
-half_idx_targets_data = int(shape(all_targets_data)[0] / 2)
+eighty_idx_data = int(shape(all_data)[0] * 0.8)
+eighty_idx_targets_data = int(shape(all_targets_data)[0] * 0.8)
 
-# split the data 50/50 between training and testing
+# split the data 80/20 between training and testing
 
-data = all_data[0:half_idx_data]
+data = all_data[0:eighty_idx_data]
 print_dim(data, "data")
-targets_data = all_targets_data[0:half_idx_targets_data]
+targets_data = all_targets_data[0:eighty_idx_targets_data]
 print(shape(targets_data)[0])
 
-test = all_data[half_idx_targets_data:data_shape]
+test = all_data[eighty_idx_data:data_shape]
 print_dim(test, "test")
-targets_test = all_targets_data[half_idx_targets_data:data_targets_shape]
+targets_test = all_targets_data[eighty_idx_targets_data:data_targets_shape]
 print(shape(targets_test)[0])
 
 # add bias to data
@@ -137,7 +146,7 @@ test = concatenate((ones((shape(test)[0], 1)), test), axis=1)
 
 change_data = list(range(shape(data)[0]))
 
-for n_units in [100]:
+for n_units in [20]:
     train_acc_arr = array([])
     train_epoch_arr = array([])
 
@@ -173,7 +182,7 @@ for n_units in [100]:
         for datum in range(shape(data)[0]):
             hj_prime = dot(weights_hidden, data[datum])
 
-            hj = vec_sigmoid(hj_prime)
+            hj = vec_relu(hj_prime)
 
             # add bias
             hj = insert(hj, 0, 1)
@@ -181,7 +190,10 @@ for n_units in [100]:
             # hidden to output
 
             ok_prime = dot(weights_output, hj)
-            ok = vec_sigmoid(ok_prime)
+
+            ok = vec_relu(ok_prime)
+
+            ok = softmax(ok)
 
             # get target
             target = targets_data[datum]
@@ -192,13 +204,13 @@ for n_units in [100]:
 
             # backpropagate
 
-            delta_k = ok * (1 - ok) * (t - ok)
+            delta_k = t - ok
 
             error_sum = 0
             for i in range(shape(weights_output)[0]):
                 error_sum += weights_output[i] * delta_k[i]
 
-            delta_j = hj * (1 - hj) * error_sum
+            delta_j = vec_relu_derivative(hj) * error_sum
 
             deltaw_h2o = eta * outer(delta_k, hj) + momentum * deltaw_h2o
 
