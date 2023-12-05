@@ -16,6 +16,12 @@ with open('medical_mnist.csv', 'r') as file:
     reader = csv.reader(file)
     data = list(reader)
 
+# Load Data
+#with open('mnist_test.csv', 'r') as file:
+#    reader = csv.reader(file)
+#    data = list(reader)   
+    
+    
 # Remove first row headers
 processed_data = np.array(data[1:], dtype=np.float32)
 
@@ -42,8 +48,8 @@ train_dataset = torch.utils.data.TensorDataset(train_images_pt, train_labels_pt)
 test_dataset = torch.utils.data.TensorDataset(test_images_pt, test_labels_pt)
 
 # Streamline batch processing and shuffling
-train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=64, shuffle=False)
+train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
 
 # Single convolutional neural network with one full hidden layer and one output layer
 
@@ -54,9 +60,9 @@ class ConvNN(nn.Module):
         self.convolutional_layer = nn.Conv2d(1, 32, kernel_size=5, stride=1, padding=2)
         
         # Full hidden layer
-        self.full_hidden_layer = nn.Linear(32 * 32 * 32, 128)  # Adjusted size after pooling
+        self.full_hidden_layer = nn.Linear(32 * 32 * 32, 100)  # Adjusted size after pooling
         # Output layer
-        self.full_output_layer = nn.Linear(128, 6)  # Assuming 10 output classes
+        self.full_output_layer = nn.Linear(100, 6)  # Assuming 10 output classes
 
     def forward(self, input_data):
         # Convolutional layer with activation and pooling
@@ -66,7 +72,7 @@ class ConvNN(nn.Module):
         input_data = input_data.view(-1, 32 * 32 * 32)  # Flatten the tensor
 
         # Fully connected layer with activation
-        input_data = F.relu(self.full_hidden_layer(input_data))
+        input_data = torch.sigmoid(self.full_hidden_layer(input_data))
 
         # Output layer
         input_data = self.full_output_layer(input_data)
@@ -74,16 +80,17 @@ class ConvNN(nn.Module):
 
 net = ConvNN()
 # Set hyperparameters
-learning_rate = 0.001
-optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+learning_rate = 0.01
+momentum = 0.1
+optimizer = optim.SGD(net.parameters(), lr=learning_rate, momentum=momentum)
 
 training_accuracies = []
 testing_accuracies = []
-
 num_epochs = 5  
 
 for epoch in range(num_epochs):
     running_loss = 0.0
+
     # Set net to training mode
     net.train() 
     for inputs, labels in train_loader:
@@ -91,6 +98,7 @@ for epoch in range(num_epochs):
         optimizer.zero_grad()
         outputs = net(inputs)
         loss = F.nll_loss(outputs, labels)
+        #loss = F.mse_loss(outputs, labels)
         loss.backward()
         optimizer.step()
         running_loss += loss.item()
@@ -123,7 +131,21 @@ for epoch in range(num_epochs):
     test_accuracy = 100 * correct / total
     testing_accuracies.append(test_accuracy)
 
-    print(f"Epoch {epoch + 1}/{num_epochs} - Training Accuracy: {train_accuracy}, Testing Accuracy: {test_accuracy}"
+    print(f"Epoch {epoch + 1}/{num_epochs} - Training Accuracy: {train_accuracy}, Testing Accuracy: {test_accuracy}")
+
+# Compute confusion matrix after all epochs
+test_preds, test_labels_list = [], []
+with torch.no_grad():
+    for inputs, labels in test_loader:
+        inputs, labels = inputs.float(), labels.long()
+        outputs = net(inputs)
+        _, predicted = torch.max(outputs.data, 1)
+        test_preds.extend(predicted.numpy())
+        test_labels_list.extend(labels.numpy())
+
+test_conf_matrix = confusion_matrix(test_labels_list, test_preds)
+print("Confusion Matrix after all epochs:")
+print(test_conf_matrix)
 
 plt.plot(training_accuracies, label='Training Accuracy')
 plt.plot(testing_accuracies, label='Testing Accuracy')
