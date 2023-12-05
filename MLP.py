@@ -32,15 +32,14 @@ def test_accuracy(msg, data, targets):
         hj_prime = dot(weights_hidden, data[datum])
 
         # apply sigmoid to all
-        hj = vec_relu(hj_prime)
+        hj = sigmoid(hj_prime)
 
         # add bias
         hj = insert(hj, 0, 1)
 
         # hidden to output
         ok_prime = dot(weights_output, hj)
-        ok = vec_relu(ok_prime)
-        ok = softmax(ok)
+        ok = softmax(ok_prime)
 
         # get prediction
         prediction = argmax(ok)
@@ -61,14 +60,13 @@ def print_confusion(data, targets):
         # feed forward
 
         hj_prime = dot(weights_hidden, data[datum])
-        hj = vec_relu(hj_prime)
+        hj = sigmoid(hj_prime)
 
         # bias
         hj = insert(hj, 0, 1)
 
         ok_prime = dot(weights_output, hj)
-        ok = vec_relu(ok_prime)
-        ok = softmax(ok)
+        ok = softmax(ok_prime)
 
         target = targets[datum]
 
@@ -86,19 +84,12 @@ def softmax(z):
     return exp(z) / sum(exp(z), axis=0)
 
 
-def relu(z):
-    return max(0, z)
+def sigmoid(z):
+    return 1 / (1 + exp(-z))
 
 
-def relu_derivative(z):
-    if z > 0:
-        return 1
-    if z <= 0:
-        return 0
-
-
-vec_relu = vectorize(relu)
-vec_relu_derivative = vectorize(relu_derivative)
+def sigmoid_derivative(z):
+    return 1 - sigmoid(z)
 
 
 # for testing
@@ -146,7 +137,7 @@ test = concatenate((ones((shape(test)[0], 1)), test), axis=1)
 
 change_data = list(range(shape(data)[0]))
 
-for n_units in [20]:
+for n_units in [100]:
     train_acc_arr = array([])
     train_epoch_arr = array([])
 
@@ -182,7 +173,7 @@ for n_units in [20]:
         for datum in range(shape(data)[0]):
             hj_prime = dot(weights_hidden, data[datum])
 
-            hj = vec_relu(hj_prime)
+            hj = sigmoid(hj_prime)
 
             # add bias
             hj = insert(hj, 0, 1)
@@ -191,9 +182,7 @@ for n_units in [20]:
 
             ok_prime = dot(weights_output, hj)
 
-            ok = vec_relu(ok_prime)
-
-            ok = softmax(ok)
+            ok = softmax(ok_prime)
 
             # get target
             target = targets_data[datum]
@@ -210,7 +199,7 @@ for n_units in [20]:
             for i in range(shape(weights_output)[0]):
                 error_sum += weights_output[i] * delta_k[i]
 
-            delta_j = vec_relu_derivative(hj) * error_sum
+            delta_j = sigmoid_derivative(hj) * error_sum
 
             deltaw_h2o = eta * outer(delta_k, hj) + momentum * deltaw_h2o
 
