@@ -14,8 +14,8 @@ import torch.optim as optim
 import seaborn as sns
 
 
-train_data = pd.read_csv('D:/CLASSES/CS545-MACHINE LEARNING/HOMEWORK/GROUP ASSIGNMENT/PYTHON/MNIST/mnist_train.csv')
-test_data = pd.read_csv('D:/CLASSES/CS545-MACHINE LEARNING/HOMEWORK/GROUP ASSIGNMENT/PYTHON/MNIST/mnist_test.csv')
+train_data = pd.read_csv('PATH to DATA/mnist_train.csv')
+test_data = pd.read_csv('PATH TO DATA/mnist_test.csv')
 data=np.vstack((train_data, test_data))
 
 # Remove first row headers
