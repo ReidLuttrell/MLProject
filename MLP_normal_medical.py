@@ -39,7 +39,7 @@ def test_accuracy(data, targets):
 
         # hidden to output
         ok_prime = dot(weights_output, hj)
-        ok = softmax(ok_prime)
+        ok = sigmoid(ok_prime)
 
         # get prediction
         prediction = argmax(ok)
@@ -66,7 +66,7 @@ def confusion(data, targets):
         hj = insert(hj, 0, 1)
 
         ok_prime = dot(weights_output, hj)
-        ok = softmax(ok_prime)
+        ok = sigmoid(ok_prime)
 
         target = targets[datum]
 
@@ -80,16 +80,8 @@ def confusion(data, targets):
     return mat
 
 
-def softmax(z):
-    return exp(z) / sum(exp(z), axis=0)
-
-
 def sigmoid(z):
     return 1 / (1 + exp(-z))
-
-
-def sigmoid_derivative(z):
-    return 1 - sigmoid(z)
 
 
 # for testing
@@ -178,7 +170,7 @@ for n_units in [100]:
 
             ok_prime = dot(weights_output, hj)
 
-            ok = softmax(ok_prime)
+            ok = sigmoid(ok_prime)
 
             # get target
             target = targets_data[datum]
@@ -189,13 +181,13 @@ for n_units in [100]:
 
             # backpropagate
 
-            delta_k = t - ok
+            delta_k = ok * (1 - ok) * (t - ok)
 
             error_sum = 0
             for i in range(shape(weights_output)[0]):
                 error_sum += weights_output[i] * delta_k[i]
 
-            delta_j = sigmoid_derivative(hj) * error_sum
+            delta_j = hj * (1 - hj) * error_sum
 
             deltaw_h2o = eta * outer(delta_k, hj) + momentum * deltaw_h2o
 

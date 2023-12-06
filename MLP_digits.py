@@ -59,7 +59,7 @@ def test_accuracy(data, targets):
     return correct / total
 
 
-def print_confusion(data, targets):
+def confusion(data, targets):
     # initialize confusion matrix
     mat = zeros((10, 10), dtype=int)
 
@@ -84,7 +84,7 @@ def print_confusion(data, targets):
                 if prediction == i and target == j:
                     mat[i, j] += 1
 
-    print(mat)
+    return mat
 
 
 def softmax(z):
@@ -130,7 +130,7 @@ targets_test = all_targets_data[eighty_idx_targets_data:data_targets_shape]
 print(shape(targets_test)[0])
 
 # hyperparams
-epochs = 5
+epochs = 50
 eta = 0.01
 momentum = 0.1
 
@@ -223,5 +223,37 @@ for n_units in [100]:
     title("n_units " + str(n_units))
     show()
 
-print_confusion(test, targets_test)
+mat = confusion(test, targets_test)
+print(mat)
+print("accuracy:")
 print(test_accuracy(test, targets_test))
+
+print(sum(mat, axis=0))
+print(sum(mat, axis=1))
+precision = diag(mat) / sum(mat, axis=0)
+
+precision_sum = 0
+for i in range(shape(precision)[0]):
+    precision_sum += precision[i]
+
+macro_precision = precision_sum / 10
+
+recall = diag(mat) / sum(mat, axis=1)
+
+recall_sum = 0
+for i in range(shape(recall)[0]):
+    recall_sum += recall[i]
+
+macro_recall = recall_sum / 10
+
+print("precision:")
+print(precision)
+
+print("macro average precision:")
+print(macro_precision)
+
+print("recall:")
+print(recall)
+
+print("macro average recall:")
+print(macro_recall)
