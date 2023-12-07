@@ -4,20 +4,27 @@ from matplotlib.pyplot import *
 # load train set data minus targets and normalize
 
 converter = lambda s: float(s) / 255
-converters = {i: converter for i in range(64 * 64 + 1)}
+converters = {i: converter for i in range(784)}
 all_data = loadtxt(
-    open("../datasets/medical_mnist.csv", "rb"),
+    open("../datasets/mnist_train.csv", "rb"),
     delimiter=",",
-    usecols=range(1, 64 * 64 + 1),
+    skiprows=1,
+    usecols=range(1, 785),
     converters=converters,
 )
 
+# load train set targets
+
 all_targets_data = loadtxt(
-    open("../datasets/medical_mnist.csv", "rb"),
+    open("../datasets/mnist_train.csv", "rb"),
     delimiter=",",
+    skiprows=1,
     usecols=range(0, 1),
     dtype=int64,
 )
+
+all_data = all_data[0:6000]  # restrict to 6000 examples
+all_targets_data = all_targets_data[0:6000]
 
 
 def test_accuracy(data, targets):
@@ -31,8 +38,8 @@ def test_accuracy(data, targets):
         # to hidden layer
         hj_prime = dot(weights_hidden, data[datum])
 
-        # apply sigmoid to all
-        hj = sigmoid(hj_prime)
+        # apply relu to all
+        hj = vec_relu(hj_prime)
 
         # add bias
         hj = insert(hj, 0, 1)
@@ -54,13 +61,13 @@ def test_accuracy(data, targets):
 
 def confusion(data, targets):
     # initialize confusion matrix
-    mat = zeros((6, 6), dtype=int)
+    mat = zeros((10, 10), dtype=int)
 
     for datum in range(shape(data)[0]):
         # feed forward
 
         hj_prime = dot(weights_hidden, data[datum])
-        hj = sigmoid(hj_prime)
+        hj = vec_relu(hj_prime)
 
         # bias
         hj = insert(hj, 0, 1)
@@ -72,8 +79,8 @@ def confusion(data, targets):
 
         prediction = argmax(ok)
 
-        for i in range(6):
-            for j in range(6):
+        for i in range(10):
+            for j in range(10):
                 if prediction == i and target == j:
                     mat[i, j] += 1
 
@@ -84,27 +91,24 @@ def softmax(z):
     return exp(z) / sum(exp(z), axis=0)
 
 
-def sigmoid(z):
-    return 1 / (1 + exp(-z))
+def relu(z):
+    return max(0, z)
 
 
-def sigmoid_derivative(z):
-    return 1 - sigmoid(z)
+def relu_derivative(z):
+    if z > 0:
+        return 1
+    return 0
+
+
+vec_relu = vectorize(relu)
+vec_relu_derivative = vectorize(relu_derivative)
 
 
 # for testing
 def print_dim(arr, name):
     print(name + ": (" + str(shape(arr)[0]) + ", " + str(shape(arr)[1]) + ")")
 
-
-prev_test_acc = 0
-
-# hyperparams
-epochs = 50
-eta = 0.01
-momentum = 0.1
-
-print_dim(all_data, "all_data")
 
 # initialize change index array
 change = list(range(shape(all_data)[0]))
@@ -131,10 +135,16 @@ print_dim(test, "test")
 targets_test = all_targets_data[eighty_idx_targets_data:data_targets_shape]
 print(shape(targets_test)[0])
 
+# hyperparams
+epochs = 50
+eta = 0.01
+momentum = 0.1
+
 # add bias to data
 data = concatenate((ones((shape(data)[0], 1)), data), axis=1)
 test = concatenate((ones((shape(test)[0], 1)), test), axis=1)
 
+# initialize change index array
 change_data = list(range(shape(data)[0]))
 
 for n_units in [100]:
@@ -147,7 +157,7 @@ for n_units in [100]:
 
     weights_hidden = random.rand(n_units, shape(data)[1]) * 0.1 - 0.05
 
-    weights_output = random.rand(6, n_units + 1) * 0.1 - 0.05
+    weights_output = random.rand(10, n_units + 1) * 0.1 - 0.05
 
     for epoch in range(0, epochs):
         print("epoch:" + str(epoch))
@@ -169,7 +179,7 @@ for n_units in [100]:
         for datum in range(shape(data)[0]):
             hj_prime = dot(weights_hidden, data[datum])
 
-            hj = sigmoid(hj_prime)
+            hj = vec_relu(hj_prime)
 
             # add bias
             hj = insert(hj, 0, 1)
@@ -184,7 +194,7 @@ for n_units in [100]:
             target = targets_data[datum]
 
             # one-hot encoding
-            t = zeros(6)
+            t = zeros(10)
             t[target] = 1
 
             # backpropagate
@@ -195,7 +205,7 @@ for n_units in [100]:
             for i in range(shape(weights_output)[0]):
                 error_sum += weights_output[i] * delta_k[i]
 
-            delta_j = sigmoid_derivative(hj) * error_sum
+            delta_j = vec_relu_derivative(hj) * error_sum
 
             deltaw_h2o = eta * outer(delta_k, hj) + momentum * deltaw_h2o
 
@@ -232,7 +242,7 @@ precision_sum = 0
 for i in range(shape(precision)[0]):
     precision_sum += precision[i]
 
-macro_precision = precision_sum / 6
+macro_precision = precision_sum / 10
 
 recall = diag(mat) / sum(mat, axis=1)
 
@@ -240,7 +250,7 @@ recall_sum = 0
 for i in range(shape(recall)[0]):
     recall_sum += recall[i]
 
-macro_recall = recall_sum / 6
+macro_recall = recall_sum / 10
 
 print("precision:")
 print(precision)

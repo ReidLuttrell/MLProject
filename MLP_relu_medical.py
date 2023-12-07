@@ -31,8 +31,8 @@ def test_accuracy(data, targets):
         # to hidden layer
         hj_prime = dot(weights_hidden, data[datum])
 
-        # apply sigmoid to all
-        hj = sigmoid(hj_prime)
+        # apply relu to all
+        hj = vec_relu(hj_prime)
 
         # add bias
         hj = insert(hj, 0, 1)
@@ -60,7 +60,7 @@ def confusion(data, targets):
         # feed forward
 
         hj_prime = dot(weights_hidden, data[datum])
-        hj = sigmoid(hj_prime)
+        hj = vec_relu(hj_prime)
 
         # bias
         hj = insert(hj, 0, 1)
@@ -84,12 +84,18 @@ def softmax(z):
     return exp(z) / sum(exp(z), axis=0)
 
 
-def sigmoid(z):
-    return 1 / (1 + exp(-z))
+def relu(z):
+    return max(0, z)
 
 
-def sigmoid_derivative(z):
-    return 1 - sigmoid(z)
+def relu_derivative(z):
+    if z > 0:
+        return 1
+    return 0
+
+
+vec_relu = vectorize(relu)
+vec_relu_derivative = vectorize(relu_derivative)
 
 
 # for testing
@@ -169,7 +175,7 @@ for n_units in [100]:
         for datum in range(shape(data)[0]):
             hj_prime = dot(weights_hidden, data[datum])
 
-            hj = sigmoid(hj_prime)
+            hj = vec_relu(hj_prime)
 
             # add bias
             hj = insert(hj, 0, 1)
@@ -195,7 +201,7 @@ for n_units in [100]:
             for i in range(shape(weights_output)[0]):
                 error_sum += weights_output[i] * delta_k[i]
 
-            delta_j = sigmoid_derivative(hj) * error_sum
+            delta_j = vec_relu_derivative(hj) * error_sum
 
             deltaw_h2o = eta * outer(delta_k, hj) + momentum * deltaw_h2o
 
